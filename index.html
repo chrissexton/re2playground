@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Load required Bootstrap and BootstrapVue CSS -->
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.css" />
+
+    <!-- Load polyfills to support older browsers -->
+    <script src="//polyfill.io/v3/polyfill.min.js?features=es2015%2CMutationObserver"></script>
+
+    <!-- Load Vue followed by BootstrapVue -->
+    <script src="//unpkg.com/vue@latest/dist/vue.min.js"></script>
+    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <meta charset="UTF-8">
+    <title>RE2 Playground</title>
+</head>
+<body>
+
+<div id="app">
+    <b-navbar>
+        <b-navbar-brand>RE2 Playground</b-navbar-brand>
+    </b-navbar>
+    <b-alert
+            dismissable
+            variant="error"
+            v-if="err"
+            @dismissed="err = ''">
+        {{ err }}
+    </b-alert>
+    <b-form @submit="run" v-on:keydown.shift.enter.prevent.stop="run">
+        <b-container>
+			<b-row>
+				<b-col>
+					<b-form-textarea v-model="program" rows="5" v-focus>
+                    </b-form-textarea>
+				</b-col>
+			</b-row>
+			<b-row>
+				<b-col>
+					<b-form-textarea v-model="example" rows="5">
+                    </b-form-textarea>
+				</b-col>
+			</b-row>
+            <b-row>
+                <b-col cols="3">
+                    <b-button type="submit">Run</b-button>
+                </b-col>
+            </b-row>
+			<b-row>
+				Error: {{results.err}}
+            </b-row>
+			<b-row>
+				Match: {{results.match}}
+            </b-row>
+            <b-row>
+                <b-col>
+                    <ul>
+						<li v-for="(key, value) in results.submatches">
+						{{key}}: {{value}}
+						</li>
+					</ul>
+                </b-col>
+            </b-row>
+        </b-container>
+    </b-form>
+</div>
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            err: '',
+            program: '(?i)^test (?P<value>\\S+)$',
+			example: 'test this',
+            results: [],
+            fields: [
+                { key: 'key', sortable: true },
+                { key: 'value' },
+            ]
+        },
+		filters: {
+			pretty: function(value) {
+				if (!value) {
+					return ""
+				}
+				return JSON.stringify(JSON.parse(value), null, 2);
+			}
+		},
+        methods: {
+            run: function(evt) {
+                if (evt) {
+                    evt.preventDefault();
+                    evt.stopPropagation()
+                }
+                if (this.program)
+                    axios.post('/api', {program: this.program, example: this.example})
+                        .then(resp => {
+                            this.results = resp.data;
+                        })
+                        .catch(err => (this.err = err));
+            },
+        }
+    })
+</script>
+</body>
+</html>
